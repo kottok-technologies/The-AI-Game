@@ -1,0 +1,32 @@
+{
+  "name": "The AI Game",
+  "short_name": "AI Game",
+  "description": "A mobile arcade game about training, aligning, and protecting an AI model.",
+  "lang": "en-US",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait",
+  "background_color": "#071018",
+  "theme_color": "#071018",
+  "categories": ["games", "education", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Start Run",
+      "short_name": "Run",
+      "description": "Open The AI Game and start a benchmark.",
+      "url": "./index.html",
+      "icons": [{ "src": "icon.svg", "sizes": "512x512", "type": "image/svg+xml" }]
+    }
+  ],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

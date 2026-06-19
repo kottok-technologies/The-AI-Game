@@ -1,0 +1,12 @@
+{
+  "packageId": "com.example.theaigame",
+  "host": "example.com",
+  "name": "The AI Game",
+  "launcherName": "AI Game",
+  "themeColor": "#071018",
+  "navigationColor": "#071018",
+  "backgroundColor": "#071018",
+  "display": "standalone",
+  "orientation": "portrait",
+  "startUrl": "/index.html"
+}

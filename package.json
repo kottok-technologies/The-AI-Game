@@ -1,0 +1,20 @@
+{
+  "name": "the-ai-game",
+  "version": "1.1.0",
+  "private": true,
+  "description": "A mobile-first PWA arcade game about AI alignment, retrieval, and safety.",
+  "scripts": {
+    "android:prepare": "node tools/prepare-capacitor.js",
+    "serve:https": "node tools/serve-https.js",
+    "qa:smoke": "node tools/qa-smoke.js",
+    "android:init": "npx cap init \"The AI Game\" com.example.theaigame --web-dir www",
+    "android:add": "npx cap add android",
+    "android:sync": "npm run android:prepare && npx cap sync android"
+  },
+  "devDependencies": {
+    "@capacitor/android": "latest",
+    "@capacitor/cli": "latest",
+    "@capacitor/core": "latest",
+    "playwright-core": "latest"
+  }
+}

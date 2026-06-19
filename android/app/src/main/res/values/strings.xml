@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">The AI Game</string>
+    <string name="title_activity_main">The AI Game</string>
+    <string name="package_name">com.example.theaigame</string>
+    <string name="custom_url_scheme">com.example.theaigame</string>
+</resources>

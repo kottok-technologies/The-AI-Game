@@ -1,0 +1,14 @@
+{
+  "appId": "com.example.theaigame",
+  "appName": "The AI Game",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "backgroundColor": "#071018"
+    }
+  }
+}
