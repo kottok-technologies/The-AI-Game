@@ -592,11 +592,10 @@ canvas {
 .select-wrap::before {
   content: "";
   position: absolute;
-  right: 10px;
-  top: 50%;
-  width: 31px;
-  height: 28px;
-  transform: translateY(-50%);
+  right: 1px;
+  top: 1px;
+  bottom: 1px;
+  width: 42px;
   border-left: 1px solid rgba(255, 255, 255, 0.11);
   border-radius: 0 7px 7px 0;
   background: linear-gradient(180deg, rgba(73, 214, 210, 0.16), rgba(73, 214, 210, 0.04));
@@ -606,7 +605,7 @@ canvas {
 .select-wrap::after {
   content: "";
   position: absolute;
-  right: 21px;
+  right: 18px;
   top: 50%;
   width: 8px;
   height: 8px;
