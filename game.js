@@ -6,10 +6,15 @@ const overlayTitle = document.querySelector("#overlayTitle");
 const overlayText = document.querySelector("#overlayText");
 const pauseDetails = document.querySelector("#pauseDetails");
 const runSummary = document.querySelector("#runSummary");
+const rewardAdRow = document.querySelector("#rewardAdRow");
+const rewardAdButton = document.querySelector("#rewardAdButton");
+const rewardAdText = document.querySelector("#rewardAdText");
 const badgeGrid = document.querySelector("#badgeGrid");
 const tokenCodex = document.querySelector("#tokenCodex");
 const contractCard = document.querySelector("#contractCard");
 const historyList = document.querySelector("#historyList");
+const monetizationCard = document.querySelector("#monetizationCard");
+const themeRow = document.querySelector("#themeRow");
 const installCard = document.querySelector("#installCard");
 const installText = document.querySelector("#installText");
 const menuTabs = document.querySelector("#menuTabs");
@@ -150,6 +155,13 @@ const systemEvents = [
   { id: "routing", name: "Routing Shift", brief: "Collect from 2 new lanes", goal: 2, duration: 13, reward: 300 }
 ];
 
+const cosmeticThemes = {
+  default: { name: "Default", bg: "#09131c", grid: "rgba(73,214,210,0.12)", accent: "#49d6d2", glow: "rgba(73,214,210,0.3)" },
+  neon: { name: "Neon", bg: "#0b1021", grid: "rgba(255,95,145,0.15)", accent: "#ff5f91", glow: "rgba(255,95,145,0.34)" },
+  solar: { name: "Solar", bg: "#11130b", grid: "rgba(255,196,92,0.15)", accent: "#ffc45c", glow: "rgba(255,196,92,0.3)" },
+  mono: { name: "Mono", bg: "#0d1115", grid: "rgba(239,248,251,0.12)", accent: "#eff8fb", glow: "rgba(239,248,251,0.24)" }
+};
+
 const cores = [
   { id: "nano", name: "Nano", cost: 0, perk: "Balanced starter core.", colors: ["#eff8fb", "#49d6d2", "#ff5f91"] },
   { id: "sentinel", name: "Sentinel", cost: 8, perk: "Starts with one extra guard.", colors: ["#eff8fb", "#8be46d", "#49d6d2"] },
@@ -166,7 +178,8 @@ const badges = {
   route: "Adaptive Route",
   mastery: "Core Mastery",
   contract: "Contract Clear",
-  incident: "Incident Clear"
+  incident: "Incident Clear",
+  supporter: "Supporter"
 };
 
 const tutorialSteps = [
@@ -191,6 +204,7 @@ let spawnTimer = 0;
 let swipeStart = null;
 let installPromptEvent = null;
 let activeMenuTab = "run";
+let rewardOffer = null;
 
 function loadProfile() {
   const blank = {
@@ -198,6 +212,9 @@ function loadProfile() {
     sound: false,
     haptics: true,
     reduceMotion: false,
+    supporter: false,
+    selectedTheme: "default",
+    rewardedAds: 0,
     runs: 0,
     tutorialDone: false,
     difficulty: "standard",
@@ -219,6 +236,9 @@ function loadProfile() {
       sound: saved?.sound === true,
       haptics: saved?.haptics !== false,
       reduceMotion: saved?.reduceMotion === true,
+      supporter: saved?.supporter === true,
+      selectedTheme: cosmeticThemes[saved?.selectedTheme] ? saved.selectedTheme : blank.selectedTheme,
+      rewardedAds: Number(saved?.rewardedAds) || 0,
       runs: Number(saved?.runs) || 0,
       tutorialDone: saved?.tutorialDone === true,
       difficulty: difficultyModes[saved?.difficulty] ? saved.difficulty : blank.difficulty,
@@ -248,6 +268,9 @@ function blankProfile(settings = {}) {
     sound: settings.sound === true,
     haptics: settings.haptics !== false,
     reduceMotion: settings.reduceMotion === true,
+    supporter: settings.supporter === true,
+    selectedTheme: cosmeticThemes[settings.selectedTheme] ? settings.selectedTheme : "default",
+    rewardedAds: 0,
     runs: 0,
     tutorialDone: false,
     difficulty: difficultyModes[settings.difficulty] ? settings.difficulty : "standard",
@@ -317,6 +340,11 @@ function getDifficulty() {
   return difficultyModes[profile.difficulty] || difficultyModes.standard;
 }
 
+function getTheme() {
+  if (!profile.supporter) return cosmeticThemes.default;
+  return cosmeticThemes[profile.selectedTheme] || cosmeticThemes.default;
+}
+
 function targetScore(mission = getMission()) {
   return Math.round(mission.target * getDifficulty().target);
 }
@@ -343,6 +371,25 @@ function upgradeCost(key) {
 
 function canBuy(key) {
   return profile.upgrades[key] < upgrades[key].max && profile.credits >= upgradeCost(key);
+}
+
+async function buySupporterPack() {
+  if (profile.supporter) return true;
+  const billing = window.TheAIGameBilling;
+  if (billing?.buySupporter) {
+    return Boolean(await billing.buySupporter());
+  }
+  return window.confirm("Debug build: unlock Supporter Pack cosmetics?");
+}
+
+async function showRewardedAd() {
+  const ads = window.TheAIGameAds;
+  if (ads?.showRewarded) {
+    return Boolean(await ads.showRewarded());
+  }
+  rewardAdText.textContent = "Loading reward...";
+  await new Promise((resolve) => setTimeout(resolve, 650));
+  return true;
 }
 
 function setMenuTab(tab) {
@@ -383,6 +430,8 @@ function renderMenus() {
   tokenCodex.innerHTML = "";
   contractCard.innerHTML = "";
   historyList.innerHTML = "";
+  monetizationCard.innerHTML = "";
+  themeRow.innerHTML = "";
 
   const earnedBadges = profile.badges.map((id) => badges[id]).filter(Boolean);
   if (earnedBadges.length === 0) {
@@ -408,6 +457,37 @@ function renderMenus() {
   const contract = dailyContract();
   const savedContract = profile.contracts[contract.key];
   contractCard.innerHTML = `<strong>Daily Contract</strong>${contract.label} - ${savedContract?.cleared ? "cleared" : `${savedContract?.best || 0}/${contract.goal}`}`;
+
+  const supporterStatus = profile.supporter ? "unlocked" : "skins, themes, badge";
+  monetizationCard.innerHTML = `<strong>Supporter Pack</strong><span>${supporterStatus}</span><button type="button">${profile.supporter ? "Unlocked" : "Unlock supporter"}</button>`;
+  const supporterButton = monetizationCard.querySelector("button");
+  supporterButton.disabled = profile.supporter;
+  supporterButton.addEventListener("click", async () => {
+    const unlocked = await buySupporterPack();
+    if (!unlocked) return;
+    profile.supporter = true;
+    profile.selectedTheme = profile.selectedTheme === "default" ? "neon" : profile.selectedTheme;
+    unlockBadge("supporter");
+    saveProfile();
+    renderMenus();
+    paintIdle();
+  });
+
+  for (const [key, theme] of Object.entries(cosmeticThemes)) {
+    const button = document.createElement("button");
+    button.className = `theme-button${profile.selectedTheme === key ? " is-selected" : ""}`;
+    button.type = "button";
+    button.disabled = key !== "default" && !profile.supporter;
+    button.innerHTML = `<span class="theme-swatch" style="--theme-color:${theme.accent}"></span><strong>${theme.name}</strong>`;
+    button.addEventListener("click", () => {
+      if (button.disabled) return;
+      profile.selectedTheme = key;
+      saveProfile();
+      renderMenus();
+      paintIdle();
+    });
+    themeRow.append(button);
+  }
 
   if (profile.history.length === 0) {
     historyList.innerHTML = `<div class="history-item is-empty">No completed runs yet</div>`;
@@ -625,6 +705,7 @@ function setOverlay(title, text, showMenus) {
   overlayTitle.textContent = title;
   overlayText.textContent = text;
   runSummary.hidden = true;
+  rewardAdRow.hidden = true;
   menuTabs.hidden = !showMenus;
   if (showMenus) {
     setMenuTab(activeMenuTab);
@@ -664,6 +745,37 @@ function showRunSummary(result) {
     .map(([value, label]) => `<div class="summary-cell"><strong>${value}</strong><span>${label}</span></div>`)
     .join("");
   runSummary.hidden = false;
+}
+
+function showRewardOffer(result) {
+  rewardOffer = result.earned > 0 ? { bonus: result.earned, claimed: false } : null;
+  if (!rewardOffer) {
+    rewardAdRow.hidden = true;
+    return;
+  }
+  rewardAdButton.disabled = false;
+  rewardAdButton.textContent = `Watch ad: +${rewardOffer.bonus} data`;
+  rewardAdText.textContent = profile.supporter ? "Optional reward ad" : "Optional reward ad";
+  rewardAdRow.hidden = false;
+}
+
+async function claimRewardOffer() {
+  if (!rewardOffer || rewardOffer.claimed) return;
+  rewardAdButton.disabled = true;
+  const completed = await showRewardedAd();
+  if (!completed) {
+    rewardAdButton.disabled = false;
+    rewardAdText.textContent = "Reward not completed";
+    return;
+  }
+  rewardOffer.claimed = true;
+  profile.credits += rewardOffer.bonus;
+  profile.rewardedAds += 1;
+  saveProfile();
+  syncHud();
+  renderMenus();
+  rewardAdButton.textContent = "Reward claimed";
+  rewardAdText.textContent = `+${rewardOffer.bonus} data added`;
 }
 
 function ensureAudio() {
@@ -928,6 +1040,7 @@ function endGame() {
     true
   );
   showRunSummary(result);
+  showRewardOffer(result);
   renderMenus();
 }
 
@@ -1209,7 +1322,8 @@ function update(dt) {
 }
 
 function drawBackground() {
-  ctx.fillStyle = "#09131c";
+  const theme = getTheme();
+  ctx.fillStyle = theme.bg;
   ctx.fillRect(0, 0, W, H);
 
   if (state?.systemEvent) {
@@ -1239,7 +1353,7 @@ function drawBackground() {
   }
 
   for (let y = ((state?.time || 0) * 120) % 90; y < H; y += 90) {
-    ctx.strokeStyle = "rgba(73,214,210,0.12)";
+    ctx.strokeStyle = theme.grid;
     ctx.beginPath();
     ctx.moveTo(52, y);
     ctx.lineTo(W - 52, y + 28);
@@ -1325,6 +1439,7 @@ function drawItem(item) {
 }
 
 function drawPlayer() {
+  const theme = getTheme();
   ctx.save();
   ctx.translate(player.x, player.y);
 
@@ -1365,6 +1480,13 @@ function drawPlayer() {
   ctx.moveTo(-28, 34);
   ctx.lineTo(28, 34);
   ctx.stroke();
+  if (profile.supporter) {
+    ctx.strokeStyle = theme.accent;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(0, 0, 73, 0, Math.PI * 2);
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
@@ -1506,6 +1628,7 @@ function loop(time) {
 }
 
 startButton.addEventListener("click", startGame);
+rewardAdButton.addEventListener("click", claimRewardOffer);
 soundButton.addEventListener("click", () => {
   profile.sound = !profile.sound;
   saveProfile();
@@ -1522,7 +1645,9 @@ resetButton.addEventListener("click", () => {
     sound: profile.sound,
     haptics: profile.haptics,
     reduceMotion: profile.reduceMotion,
-    difficulty: profile.difficulty
+    difficulty: profile.difficulty,
+    supporter: profile.supporter,
+    selectedTheme: profile.selectedTheme
   };
   profile = blankProfile(settings);
   selectedMission = profile.selectedMission;

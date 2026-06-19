@@ -34,6 +34,8 @@ System events appear mid-run as short incidents such as data surges, safety audi
 
 Save tools let players export progress as JSON, import a backup, and reset only after typing a confirmation phrase.
 
+Monetization scaffolding includes an optional Supporter Pack for cosmetics and a post-run rewarded-ad bonus. Debug builds simulate purchase/ad completion; production builds should connect those hooks to Google Play Billing and AdMob.
+
 ## Play
 
 Open `index.html` in a browser.
